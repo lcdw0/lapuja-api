@@ -1,5 +1,7 @@
 package com.lapuja.api.controller;
 
+import com.lapuja.api.dto.LoginRequest;
+import com.lapuja.api.dto.UsuarioRegistroRequest;
 import com.lapuja.api.entity.Usuario;
 import com.lapuja.api.repository.UsuarioRepository;
 import org.springframework.web.bind.annotation.*;
@@ -18,30 +20,74 @@ public class UsuarioController {
     }
 
     @PostMapping("/registro")
-    public Object registrar(@RequestBody Usuario usuario) {
-        if (usuarioRepository.findByCorreo(usuario.getCorreo()).isPresent()) {
+    public Object registrar(@RequestBody UsuarioRegistroRequest request) {
+
+        if (request.getNombre() == null || request.getNombre().isBlank()) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "El nombre es obligatorio"
+            );
+        }
+
+        if (request.getCorreo() == null || request.getCorreo().isBlank()) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "El correo es obligatorio"
+            );
+        }
+
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "La contraseña es obligatoria"
+            );
+        }
+
+        if (usuarioRepository.findByCorreo(request.getCorreo()).isPresent()) {
             return Map.of(
                     "ok", false,
                     "mensaje", "El correo ya está registrado"
             );
         }
 
-        Usuario nuevoUsuario = usuarioRepository.save(usuario);
+        Usuario nuevoUsuario = new Usuario(
+                request.getNombre(),
+                request.getCorreo(),
+                request.getPassword()
+        );
+
+        Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 
         return Map.of(
                 "ok", true,
                 "mensaje", "Usuario registrado correctamente",
-                "id", nuevoUsuario.getId(),
-                "nombre", nuevoUsuario.getNombre(),
-                "correo", nuevoUsuario.getCorreo()
+                "id", usuarioGuardado.getId(),
+                "nombre", usuarioGuardado.getNombre(),
+                "correo", usuarioGuardado.getCorreo()
         );
     }
 
     @PostMapping("/login")
-    public Object login(@RequestBody Usuario usuario) {
-        return usuarioRepository.findByCorreo(usuario.getCorreo())
+    public Object login(@RequestBody LoginRequest request) {
+
+        if (request.getCorreo() == null || request.getCorreo().isBlank()) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "El correo es obligatorio"
+            );
+        }
+
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "La contraseña es obligatoria"
+            );
+        }
+
+        return usuarioRepository.findByCorreo(request.getCorreo())
                 .map(usuarioEncontrado -> {
-                    if (!usuarioEncontrado.getPassword().equals(usuario.getPassword())) {
+
+                    if (!usuarioEncontrado.getPassword().equals(request.getPassword())) {
                         return Map.of(
                                 "ok", false,
                                 "mensaje", "Contraseña incorrecta"

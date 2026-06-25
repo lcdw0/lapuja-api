@@ -1,5 +1,6 @@
 package com.lapuja.api.controller;
 
+import com.lapuja.api.dto.PujaRequest;
 import com.lapuja.api.entity.Puja;
 import com.lapuja.api.entity.Subasta;
 import com.lapuja.api.entity.Usuario;
@@ -31,11 +32,12 @@ public class PujaController {
     }
 
     @PostMapping
-    public Object crearPuja(@RequestBody Puja puja) {
-        Usuario usuario = usuarioRepository.findById(puja.getUsuarioId())
+    public Object crearPuja(@RequestBody PujaRequest request) {
+
+        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
                 .orElseThrow();
 
-        Subasta subasta = subastaRepository.findById(puja.getSubastaId())
+        Subasta subasta = subastaRepository.findById(request.getSubastaId())
                 .orElseThrow();
 
         if (!"ACTIVA".equals(subasta.getEstado())) {
@@ -45,16 +47,21 @@ public class PujaController {
             );
         }
 
-        if (puja.getMonto() <= subasta.getPrecioActual()) {
+        if (request.getMonto() <= subasta.getPrecioActual()) {
             return Map.of(
                     "ok", false,
                     "mensaje", "La puja debe ser mayor al precio actual"
             );
         }
 
+        Puja puja = new Puja();
+        puja.setUsuarioId(request.getUsuarioId());
+        puja.setSubastaId(request.getSubastaId());
+        puja.setMonto(request.getMonto());
+
         Puja nuevaPuja = pujaRepository.save(puja);
 
-        subasta.setPrecioActual(puja.getMonto());
+        subasta.setPrecioActual(request.getMonto());
         subasta.setOfertas(subasta.getOfertas() + 1);
         subasta.setGanador(usuario.getNombre());
 
