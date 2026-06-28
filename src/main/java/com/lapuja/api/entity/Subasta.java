@@ -25,6 +25,7 @@ public class Subasta {
 
     private Integer ofertas;
     private String ganador;
+    private Long ganadorId;
 
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaFin;
@@ -41,6 +42,7 @@ public class Subasta {
         this.estado = "ACTIVA";
         this.ofertas = 0;
         this.ganador = "Nadie";
+        this.ganadorId = null;
     }
 
     public Long getId() {
@@ -117,6 +119,14 @@ public class Subasta {
 
     public void setGanador(String ganador) {
         this.ganador = ganador;
+    }
+
+    public Long getGanadorId() {
+        return ganadorId;
+    }
+
+    public void setGanadorId(Long ganadorId) {
+        this.ganadorId = ganadorId;
     }
 
     public LocalDateTime getFechaCreacion() {

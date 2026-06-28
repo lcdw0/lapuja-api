@@ -64,6 +64,7 @@ public class PujaController {
         subasta.setPrecioActual(request.getMonto());
         subasta.setOfertas(subasta.getOfertas() + 1);
         subasta.setGanador(usuario.getNombre());
+        subasta.setGanadorId(usuario.getId());
 
         subastaRepository.save(subasta);
 

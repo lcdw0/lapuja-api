@@ -2,10 +2,12 @@ package com.lapuja.api.controller;
 
 import com.lapuja.api.dto.LoginRequest;
 import com.lapuja.api.dto.UsuarioRegistroRequest;
+import com.lapuja.api.dto.UsuarioUpdateRequest;
 import com.lapuja.api.entity.Usuario;
 import com.lapuja.api.repository.UsuarioRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -58,12 +60,10 @@ public class UsuarioController {
 
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 
-        return Map.of(
-                "ok", true,
-                "mensaje", "Usuario registrado correctamente",
-                "id", usuarioGuardado.getId(),
-                "nombre", usuarioGuardado.getNombre(),
-                "correo", usuarioGuardado.getCorreo()
+        return respuestaUsuario(
+                true,
+                "Usuario registrado correctamente",
+                usuarioGuardado
         );
     }
 
@@ -94,12 +94,10 @@ public class UsuarioController {
                         );
                     }
 
-                    return Map.of(
-                            "ok", true,
-                            "mensaje", "Inicio de sesión correcto",
-                            "id", usuarioEncontrado.getId(),
-                            "nombre", usuarioEncontrado.getNombre(),
-                            "correo", usuarioEncontrado.getCorreo()
+                    return respuestaUsuario(
+                            true,
+                            "Inicio de sesión correcto",
+                            usuarioEncontrado
                     );
                 })
                 .orElse(
@@ -108,5 +106,137 @@ public class UsuarioController {
                                 "mensaje", "Usuario no encontrado"
                         )
                 );
+    }
+
+    @GetMapping("/{id}")
+    public Object obtenerUsuario(@PathVariable Long id) {
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElse(null);
+
+        if (usuario == null) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Usuario no encontrado"
+            );
+        }
+
+        return respuestaUsuario(
+                true,
+                "Usuario encontrado",
+                usuario
+        );
+    }
+
+    @PutMapping("/{id}")
+    public Object actualizarUsuario(
+            @PathVariable Long id,
+            @RequestBody UsuarioUpdateRequest request
+    ) {
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElse(null);
+
+        if (usuario == null) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Usuario no encontrado"
+            );
+        }
+
+        if (request.getNombre() != null && !request.getNombre().isBlank()) {
+            usuario.setNombre(request.getNombre());
+        }
+
+        if (request.getCorreo() != null && !request.getCorreo().isBlank()) {
+            usuario.setCorreo(request.getCorreo());
+        }
+
+        if (request.getFotoPerfil() != null && !request.getFotoPerfil().isBlank()) {
+            usuario.setFotoPerfil(request.getFotoPerfil());
+        }
+
+        if (request.getTelefono() != null) {
+            usuario.setTelefono(request.getTelefono());
+        }
+
+        if (request.getCiudad() != null) {
+            usuario.setCiudad(request.getCiudad());
+        }
+
+        if (request.getBiografia() != null) {
+            usuario.setBiografia(request.getBiografia());
+        }
+
+        // Cambio de contraseña
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+
+            if (request.getPasswordActual() == null ||
+                    request.getPasswordActual().isBlank()) {
+
+                return Map.of(
+                        "ok", false,
+                        "mensaje", "Debe ingresar su contraseña actual."
+                );
+            }
+
+            if (!usuario.getPassword().equals(request.getPasswordActual())) {
+
+                return Map.of(
+                        "ok", false,
+                        "mensaje", "La contraseña actual es incorrecta."
+                );
+            }
+
+            if (request.getConfirmarPassword() == null ||
+                    !request.getPassword().equals(request.getConfirmarPassword())) {
+
+                return Map.of(
+                        "ok", false,
+                        "mensaje", "Las nuevas contraseñas no coinciden."
+                );
+            }
+
+            if (request.getPassword().length() < 8) {
+
+                return Map.of(
+                        "ok", false,
+                        "mensaje", "La nueva contraseña debe tener al menos 8 caracteres."
+                );
+            }
+
+            usuario.setPassword(request.getPassword());
+        }
+
+        Usuario actualizado = usuarioRepository.save(usuario);
+
+        return respuestaUsuario(
+                true,
+                "Usuario actualizado correctamente",
+                actualizado
+        );
+    }
+
+    private Map<String, Object> respuestaUsuario(
+            boolean ok,
+            String mensaje,
+            Usuario usuario
+    ) {
+
+        Map<String, Object> respuesta = new HashMap<>();
+
+        respuesta.put("ok", ok);
+        respuesta.put("mensaje", mensaje);
+        respuesta.put("id", usuario.getId());
+        respuesta.put("nombre", usuario.getNombre());
+        respuesta.put("correo", usuario.getCorreo());
+        respuesta.put("fotoPerfil", usuario.getFotoPerfil());
+
+        respuesta.put("telefono", usuario.getTelefono());
+        respuesta.put("ciudad", usuario.getCiudad());
+        respuesta.put("biografia", usuario.getBiografia());
+        respuesta.put("fechaRegistro", usuario.getFechaRegistro());
+
+        return respuesta;
     }
 }

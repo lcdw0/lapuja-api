@@ -1,51 +1,19 @@
-package com.lapuja.api.entity;
+package com.lapuja.api.dto;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
+public class UsuarioUpdateRequest {
 
-@Entity
-@Table(name = "usuarios")
-public class Usuario {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
     private String nombre;
-
-    @Column(nullable = false, unique = true)
     private String correo;
-
-    @Column(nullable = false)
+    private String passwordActual;
     private String password;
-
-    @Column(length = 1000)
+    private String confirmarPassword;
     private String fotoPerfil;
-
     private String telefono;
     private String ciudad;
-
-    @Column(length = 500)
     private String biografia;
 
-    private LocalDateTime fechaRegistro;
-
-    public Usuario() {
+    public UsuarioUpdateRequest() {
     }
-
-    public Usuario(String nombre, String correo, String password) {
-        this.nombre = nombre;
-        this.correo = correo;
-        this.password = password;
-    }
-
-    @PrePersist
-    public void prePersist() {
-        this.fechaRegistro = LocalDateTime.now();
-    }
-
-    public Long getId() { return id; }
 
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
@@ -53,8 +21,14 @@ public class Usuario {
     public String getCorreo() { return correo; }
     public void setCorreo(String correo) { this.correo = correo; }
 
+    public String getPasswordActual() { return passwordActual; }
+    public void setPasswordActual(String passwordActual) { this.passwordActual = passwordActual; }
+
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getConfirmarPassword() { return confirmarPassword; }
+    public void setConfirmarPassword(String confirmarPassword) { this.confirmarPassword = confirmarPassword; }
 
     public String getFotoPerfil() { return fotoPerfil; }
     public void setFotoPerfil(String fotoPerfil) { this.fotoPerfil = fotoPerfil; }
@@ -67,7 +41,4 @@ public class Usuario {
 
     public String getBiografia() { return biografia; }
     public void setBiografia(String biografia) { this.biografia = biografia; }
-
-    public LocalDateTime getFechaRegistro() { return fechaRegistro; }
-    public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
 }
