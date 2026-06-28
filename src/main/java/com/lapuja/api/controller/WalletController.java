@@ -2,13 +2,18 @@ package com.lapuja.api.controller;
 
 import com.lapuja.api.dto.RecargaRequest;
 import com.lapuja.api.entity.MetodoPago;
+import com.lapuja.api.entity.Subasta;
 import com.lapuja.api.entity.Usuario;
 import com.lapuja.api.entity.WalletMovimiento;
 import com.lapuja.api.repository.MetodoPagoRepository;
+import com.lapuja.api.repository.SubastaRepository;
 import com.lapuja.api.repository.UsuarioRepository;
 import com.lapuja.api.repository.WalletMovimientoRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -19,15 +24,18 @@ public class WalletController {
     private final UsuarioRepository usuarioRepository;
     private final WalletMovimientoRepository walletRepository;
     private final MetodoPagoRepository metodoPagoRepository;
+    private final SubastaRepository subastaRepository;
 
     public WalletController(
             UsuarioRepository usuarioRepository,
             WalletMovimientoRepository walletRepository,
-            MetodoPagoRepository metodoPagoRepository
+            MetodoPagoRepository metodoPagoRepository,
+            SubastaRepository subastaRepository
     ) {
         this.usuarioRepository = usuarioRepository;
         this.walletRepository = walletRepository;
         this.metodoPagoRepository = metodoPagoRepository;
+        this.subastaRepository = subastaRepository;
     }
 
     @PostMapping("/{usuarioId}/recargar")
@@ -92,6 +100,42 @@ public class WalletController {
         return Map.of(
                 "ok", true,
                 "saldo", usuario.getSaldo()
+        );
+    }
+
+    @GetMapping("/{usuarioId}/retenido")
+    public Object obtenerSaldoRetenido(@PathVariable Long usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+
+        if (usuario == null) {
+            return Map.of("ok", false, "mensaje", "Usuario no encontrado");
+        }
+
+        List<Subasta> subastasGanando =
+                subastaRepository.findByEstadoAndGanadorId("ACTIVA", usuarioId);
+
+        double totalRetenido = 0.0;
+        List<Map<String, Object>> items = new ArrayList<>();
+
+        for (Subasta subasta : subastasGanando) {
+            double monto = subasta.getPrecioActual() == null ? 0.0 : subasta.getPrecioActual();
+            totalRetenido += monto;
+
+            Map<String, Object> item = new HashMap<>();
+            item.put("subastaId", subasta.getId());
+            item.put("nombreSubasta", subasta.getNombre());
+            item.put("monto", monto);
+            item.put("estado", subasta.getEstado());
+            item.put("fechaFin", subasta.getFechaFin());
+
+            items.add(item);
+        }
+
+        return Map.of(
+                "ok", true,
+                "saldoDisponible", usuario.getSaldo(),
+                "totalRetenido", totalRetenido,
+                "items", items
         );
     }
 
