@@ -10,4 +10,6 @@ public interface PujaRepository extends JpaRepository<Puja, Long> {
     List<Puja> findByUsuarioId(Long usuarioId);
 
     List<Puja> findBySubastaId(Long subastaId);
+
+    boolean existsBySubastaId(Long subastaId);
 }

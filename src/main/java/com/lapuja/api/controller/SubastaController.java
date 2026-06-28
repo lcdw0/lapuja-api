@@ -2,9 +2,11 @@ package com.lapuja.api.controller;
 
 import com.lapuja.api.dto.SubastaRequest;
 import com.lapuja.api.entity.Subasta;
+import com.lapuja.api.repository.PujaRepository;
 import com.lapuja.api.repository.SubastaRepository;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -14,9 +16,11 @@ import java.util.Map;
 public class SubastaController {
 
     private final SubastaRepository subastaRepository;
+    private final PujaRepository pujaRepository;
 
-    public SubastaController(SubastaRepository subastaRepository) {
+    public SubastaController(SubastaRepository subastaRepository, PujaRepository pujaRepository) {
         this.subastaRepository = subastaRepository;
+        this.pujaRepository = pujaRepository;
     }
 
     @GetMapping
@@ -26,6 +30,176 @@ public class SubastaController {
 
     @PostMapping
     public Object crear(@RequestBody SubastaRequest request) {
+
+        Object validacion = validarSubastaRequest(request, true);
+        if (validacion != null) {
+            return validacion;
+        }
+
+        Subasta subasta = new Subasta();
+
+        subasta.setNombre(request.getNombre().trim());
+        subasta.setDescripcion(request.getDescripcion());
+        subasta.setPrecioInicial(request.getPrecioInicial());
+        subasta.setCategoria(request.getCategoria());
+        subasta.setImagen(request.getImagen());
+        subasta.setFechaFin(request.getFechaFin());
+        subasta.setUsuarioId(request.getUsuarioId());
+
+        return subastaRepository.save(subasta);
+    }
+
+    @GetMapping("/{id}")
+    public Object obtenerPorId(@PathVariable Long id) {
+        return subastaRepository.findById(id)
+                .<Object>map(subasta -> subasta)
+                .orElseGet(() -> Map.of(
+                        "ok", false,
+                        "mensaje", "Subasta no encontrada"
+                ));
+    }
+
+    @GetMapping("/usuario/{usuarioId}")
+    public List<Subasta> listarPorUsuario(@PathVariable Long usuarioId) {
+        return subastaRepository.findByUsuarioId(usuarioId);
+    }
+
+    @GetMapping("/activas")
+    public List<Subasta> listarActivas() {
+        return subastaRepository.findByEstado("ACTIVA");
+    }
+
+    @PutMapping("/{id}")
+    public Object editar(@PathVariable Long id, @RequestBody SubastaRequest request) {
+
+        Subasta subasta = subastaRepository.findById(id).orElse(null);
+
+        if (subasta == null) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Subasta no encontrada"
+            );
+        }
+
+        if (!"ACTIVA".equals(subasta.getEstado())) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Solo se pueden editar subastas activas"
+            );
+        }
+
+        boolean tienePujas = pujaRepository.existsBySubastaId(id);
+
+        if (tienePujas) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "No se puede editar una subasta que ya tiene pujas"
+            );
+        }
+
+        if (request.getUsuarioId() == null || !request.getUsuarioId().equals(subasta.getUsuarioId())) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "No tienes permiso para editar esta subasta"
+            );
+        }
+
+        Object validacion = validarSubastaRequest(request, true);
+        if (validacion != null) {
+            return validacion;
+        }
+
+        subasta.setNombre(request.getNombre().trim());
+        subasta.setDescripcion(request.getDescripcion());
+        subasta.setPrecioInicial(request.getPrecioInicial());
+        subasta.setPrecioActual(request.getPrecioInicial());
+        subasta.setCategoria(request.getCategoria());
+        subasta.setImagen(request.getImagen());
+        subasta.setFechaFin(request.getFechaFin());
+
+        return subastaRepository.save(subasta);
+    }
+
+    @PutMapping("/{id}/cancelar")
+    public Object cancelar(@PathVariable Long id, @RequestBody Map<String, Long> request) {
+
+        Subasta subasta = subastaRepository.findById(id).orElse(null);
+
+        if (subasta == null) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Subasta no encontrada"
+            );
+        }
+
+        Long usuarioId = request.get("usuarioId");
+
+        if (usuarioId == null || !usuarioId.equals(subasta.getUsuarioId())) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "No tienes permiso para cancelar esta subasta"
+            );
+        }
+
+        if (!"ACTIVA".equals(subasta.getEstado())) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Solo se pueden cancelar subastas activas"
+            );
+        }
+
+        boolean tienePujas = pujaRepository.existsBySubastaId(id);
+
+        if (tienePujas) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "No se puede cancelar una subasta que ya tiene pujas"
+            );
+        }
+
+        subasta.setEstado("CANCELADA");
+        subasta.setGanador("Subasta cancelada");
+        subasta.setGanadorId(null);
+
+        return subastaRepository.save(subasta);
+    }
+
+    @PutMapping("/{id}/finalizar")
+    public Object finalizar(@PathVariable Long id) {
+
+        Subasta subasta = subastaRepository.findById(id).orElse(null);
+
+        if (subasta == null) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Subasta no encontrada"
+            );
+        }
+
+        if ("FINALIZADA".equals(subasta.getEstado())) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "La subasta ya está finalizada"
+            );
+        }
+
+        if ("CANCELADA".equals(subasta.getEstado())) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "No se puede finalizar una subasta cancelada"
+            );
+        }
+
+        subasta.setEstado("FINALIZADA");
+
+        if (subasta.getGanadorId() == null) {
+            subasta.setGanador("Sin ganador");
+        }
+
+        return subastaRepository.save(subasta);
+    }
+
+    private Object validarSubastaRequest(SubastaRequest request, boolean validarFecha) {
 
         if (request.getNombre() == null || request.getNombre().isBlank()) {
             return Map.of(
@@ -41,50 +215,27 @@ public class SubastaController {
             );
         }
 
-        Subasta subasta = new Subasta();
-
-        subasta.setNombre(request.getNombre());
-        subasta.setDescripcion(request.getDescripcion());
-        subasta.setPrecioInicial(request.getPrecioInicial());
-        subasta.setCategoria(request.getCategoria());
-        subasta.setImagen(request.getImagen());
-        subasta.setFechaFin(request.getFechaFin());
-        subasta.setUsuarioId(request.getUsuarioId());
-
-        return subastaRepository.save(subasta);
-    }
-
-    @GetMapping("/{id}")
-    public Subasta obtenerPorId(@PathVariable Long id) {
-        return subastaRepository.findById(id)
-                .orElseThrow();
-    }
-
-    @GetMapping("/usuario/{usuarioId}")
-    public List<Subasta> listarPorUsuario(@PathVariable Long usuarioId) {
-        return subastaRepository.findByUsuarioId(usuarioId);
-    }
-
-    @GetMapping("/activas")
-    public List<Subasta> listarActivas() {
-        return subastaRepository.findByEstado("ACTIVA");
-    }
-
-    @PutMapping("/{id}/finalizar")
-    public Object finalizar(@PathVariable Long id) {
-
-        Subasta subasta = subastaRepository.findById(id)
-                .orElseThrow();
-
-        if ("FINALIZADA".equals(subasta.getEstado())) {
+        if (request.getUsuarioId() == null) {
             return Map.of(
                     "ok", false,
-                    "mensaje", "La subasta ya está finalizada"
+                    "mensaje", "El usuario es obligatorio"
             );
         }
 
-        subasta.setEstado("FINALIZADA");
+        if (request.getFechaFin() == null) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "La fecha de finalización es obligatoria"
+            );
+        }
 
-        return subastaRepository.save(subasta);
+        if (validarFecha && request.getFechaFin().isBefore(LocalDateTime.now())) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "La fecha de finalización debe ser futura"
+            );
+        }
+
+        return null;
     }
 }
