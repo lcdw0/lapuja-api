@@ -29,6 +29,8 @@ public class Usuario {
     @Column(length = 500)
     private String biografia;
 
+    private Double saldo;
+
     private LocalDateTime fechaRegistro;
 
     public Usuario() {
@@ -43,31 +45,85 @@ public class Usuario {
     @PrePersist
     public void prePersist() {
         this.fechaRegistro = LocalDateTime.now();
+
+        if (this.saldo == null) {
+            this.saldo = 10000.0;
+        }
     }
 
-    public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
 
-    public String getNombre() { return nombre; }
-    public void setNombre(String nombre) { this.nombre = nombre; }
+    public String getNombre() {
+        return nombre;
+    }
 
-    public String getCorreo() { return correo; }
-    public void setCorreo(String correo) { this.correo = correo; }
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
+    public String getCorreo() {
+        return correo;
+    }
 
-    public String getFotoPerfil() { return fotoPerfil; }
-    public void setFotoPerfil(String fotoPerfil) { this.fotoPerfil = fotoPerfil; }
+    public void setCorreo(String correo) {
+        this.correo = correo;
+    }
 
-    public String getTelefono() { return telefono; }
-    public void setTelefono(String telefono) { this.telefono = telefono; }
+    public String getPassword() {
+        return password;
+    }
 
-    public String getCiudad() { return ciudad; }
-    public void setCiudad(String ciudad) { this.ciudad = ciudad; }
+    public void setPassword(String password) {
+        this.password = password;
+    }
 
-    public String getBiografia() { return biografia; }
-    public void setBiografia(String biografia) { this.biografia = biografia; }
+    public String getFotoPerfil() {
+        return fotoPerfil;
+    }
 
-    public LocalDateTime getFechaRegistro() { return fechaRegistro; }
-    public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
+    public void setFotoPerfil(String fotoPerfil) {
+        this.fotoPerfil = fotoPerfil;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getCiudad() {
+        return ciudad;
+    }
+
+    public void setCiudad(String ciudad) {
+        this.ciudad = ciudad;
+    }
+
+    public String getBiografia() {
+        return biografia;
+    }
+
+    public void setBiografia(String biografia) {
+        this.biografia = biografia;
+    }
+
+    public Double getSaldo() {
+        return saldo;
+    }
+
+    public void setSaldo(Double saldo) {
+        this.saldo = saldo;
+    }
+
+    public LocalDateTime getFechaRegistro() {
+        return fechaRegistro;
+    }
+
+    public void setFechaRegistro(LocalDateTime fechaRegistro) {
+        this.fechaRegistro = fechaRegistro;
+    }
 }

@@ -25,31 +25,19 @@ public class UsuarioController {
     public Object registrar(@RequestBody UsuarioRegistroRequest request) {
 
         if (request.getNombre() == null || request.getNombre().isBlank()) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "El nombre es obligatorio"
-            );
+            return Map.of("ok", false, "mensaje", "El nombre es obligatorio");
         }
 
         if (request.getCorreo() == null || request.getCorreo().isBlank()) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "El correo es obligatorio"
-            );
+            return Map.of("ok", false, "mensaje", "El correo es obligatorio");
         }
 
         if (request.getPassword() == null || request.getPassword().isBlank()) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "La contraseña es obligatoria"
-            );
+            return Map.of("ok", false, "mensaje", "La contraseña es obligatoria");
         }
 
         if (usuarioRepository.findByCorreo(request.getCorreo()).isPresent()) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "El correo ya está registrado"
-            );
+            return Map.of("ok", false, "mensaje", "El correo ya está registrado");
         }
 
         Usuario nuevoUsuario = new Usuario(
@@ -60,38 +48,24 @@ public class UsuarioController {
 
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 
-        return respuestaUsuario(
-                true,
-                "Usuario registrado correctamente",
-                usuarioGuardado
-        );
+        return respuestaUsuario(true, "Usuario registrado correctamente", usuarioGuardado);
     }
 
     @PostMapping("/login")
     public Object login(@RequestBody LoginRequest request) {
 
         if (request.getCorreo() == null || request.getCorreo().isBlank()) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "El correo es obligatorio"
-            );
+            return Map.of("ok", false, "mensaje", "El correo es obligatorio");
         }
 
         if (request.getPassword() == null || request.getPassword().isBlank()) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "La contraseña es obligatoria"
-            );
+            return Map.of("ok", false, "mensaje", "La contraseña es obligatoria");
         }
 
         return usuarioRepository.findByCorreo(request.getCorreo())
                 .map(usuarioEncontrado -> {
-
                     if (!usuarioEncontrado.getPassword().equals(request.getPassword())) {
-                        return Map.of(
-                                "ok", false,
-                                "mensaje", "Contraseña incorrecta"
-                        );
+                        return Map.of("ok", false, "mensaje", "Contraseña incorrecta");
                     }
 
                     return respuestaUsuario(
@@ -101,31 +75,20 @@ public class UsuarioController {
                     );
                 })
                 .orElse(
-                        Map.of(
-                                "ok", false,
-                                "mensaje", "Usuario no encontrado"
-                        )
+                        Map.of("ok", false, "mensaje", "Usuario no encontrado")
                 );
     }
 
     @GetMapping("/{id}")
     public Object obtenerUsuario(@PathVariable Long id) {
 
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElse(null);
+        Usuario usuario = usuarioRepository.findById(id).orElse(null);
 
         if (usuario == null) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "Usuario no encontrado"
-            );
+            return Map.of("ok", false, "mensaje", "Usuario no encontrado");
         }
 
-        return respuestaUsuario(
-                true,
-                "Usuario encontrado",
-                usuario
-        );
+        return respuestaUsuario(true, "Usuario encontrado", usuario);
     }
 
     @PutMapping("/{id}")
@@ -134,14 +97,10 @@ public class UsuarioController {
             @RequestBody UsuarioUpdateRequest request
     ) {
 
-        Usuario usuario = usuarioRepository.findById(id)
-                .orElse(null);
+        Usuario usuario = usuarioRepository.findById(id).orElse(null);
 
         if (usuario == null) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "Usuario no encontrado"
-            );
+            return Map.of("ok", false, "mensaje", "Usuario no encontrado");
         }
 
         if (request.getNombre() != null && !request.getNombre().isBlank()) {
@@ -168,41 +127,23 @@ public class UsuarioController {
             usuario.setBiografia(request.getBiografia());
         }
 
-        // Cambio de contraseña
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
 
-            if (request.getPasswordActual() == null ||
-                    request.getPasswordActual().isBlank()) {
-
-                return Map.of(
-                        "ok", false,
-                        "mensaje", "Debe ingresar su contraseña actual."
-                );
+            if (request.getPasswordActual() == null || request.getPasswordActual().isBlank()) {
+                return Map.of("ok", false, "mensaje", "Debe ingresar su contraseña actual.");
             }
 
             if (!usuario.getPassword().equals(request.getPasswordActual())) {
-
-                return Map.of(
-                        "ok", false,
-                        "mensaje", "La contraseña actual es incorrecta."
-                );
+                return Map.of("ok", false, "mensaje", "La contraseña actual es incorrecta.");
             }
 
             if (request.getConfirmarPassword() == null ||
                     !request.getPassword().equals(request.getConfirmarPassword())) {
-
-                return Map.of(
-                        "ok", false,
-                        "mensaje", "Las nuevas contraseñas no coinciden."
-                );
+                return Map.of("ok", false, "mensaje", "Las nuevas contraseñas no coinciden.");
             }
 
             if (request.getPassword().length() < 8) {
-
-                return Map.of(
-                        "ok", false,
-                        "mensaje", "La nueva contraseña debe tener al menos 8 caracteres."
-                );
+                return Map.of("ok", false, "mensaje", "La nueva contraseña debe tener al menos 8 caracteres.");
             }
 
             usuario.setPassword(request.getPassword());
@@ -210,11 +151,7 @@ public class UsuarioController {
 
         Usuario actualizado = usuarioRepository.save(usuario);
 
-        return respuestaUsuario(
-                true,
-                "Usuario actualizado correctamente",
-                actualizado
-        );
+        return respuestaUsuario(true, "Usuario actualizado correctamente", actualizado);
     }
 
     private Map<String, Object> respuestaUsuario(
@@ -222,7 +159,6 @@ public class UsuarioController {
             String mensaje,
             Usuario usuario
     ) {
-
         Map<String, Object> respuesta = new HashMap<>();
 
         respuesta.put("ok", ok);
@@ -231,11 +167,11 @@ public class UsuarioController {
         respuesta.put("nombre", usuario.getNombre());
         respuesta.put("correo", usuario.getCorreo());
         respuesta.put("fotoPerfil", usuario.getFotoPerfil());
-
         respuesta.put("telefono", usuario.getTelefono());
         respuesta.put("ciudad", usuario.getCiudad());
         respuesta.put("biografia", usuario.getBiografia());
         respuesta.put("fechaRegistro", usuario.getFechaRegistro());
+        respuesta.put("saldo", usuario.getSaldo());
 
         return respuesta;
     }

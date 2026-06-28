@@ -4,9 +4,11 @@ import com.lapuja.api.dto.PujaRequest;
 import com.lapuja.api.entity.Puja;
 import com.lapuja.api.entity.Subasta;
 import com.lapuja.api.entity.Usuario;
+import com.lapuja.api.entity.WalletMovimiento;
 import com.lapuja.api.repository.PujaRepository;
 import com.lapuja.api.repository.SubastaRepository;
 import com.lapuja.api.repository.UsuarioRepository;
+import com.lapuja.api.repository.WalletMovimientoRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,25 +22,42 @@ public class PujaController {
     private final PujaRepository pujaRepository;
     private final SubastaRepository subastaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final WalletMovimientoRepository walletRepository;
 
     public PujaController(
             PujaRepository pujaRepository,
             SubastaRepository subastaRepository,
-            UsuarioRepository usuarioRepository
+            UsuarioRepository usuarioRepository,
+            WalletMovimientoRepository walletRepository
     ) {
         this.pujaRepository = pujaRepository;
         this.subastaRepository = subastaRepository;
         this.usuarioRepository = usuarioRepository;
+        this.walletRepository = walletRepository;
     }
 
     @PostMapping
     public Object crearPuja(@RequestBody PujaRequest request) {
 
         Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
-                .orElseThrow();
+                .orElse(null);
+
+        if (usuario == null) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Usuario no encontrado"
+            );
+        }
 
         Subasta subasta = subastaRepository.findById(request.getSubastaId())
-                .orElseThrow();
+                .orElse(null);
+
+        if (subasta == null) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Subasta no encontrada"
+            );
+        }
 
         if (!"ACTIVA".equals(subasta.getEstado())) {
             return Map.of(
@@ -47,12 +66,25 @@ public class PujaController {
             );
         }
 
-        if (request.getMonto() <= subasta.getPrecioActual()) {
+        if (request.getMonto() == null || request.getMonto() <= subasta.getPrecioActual()) {
             return Map.of(
                     "ok", false,
                     "mensaje", "La puja debe ser mayor al precio actual"
             );
         }
+
+        Double saldoActual = usuario.getSaldo() == null ? 0.0 : usuario.getSaldo();
+
+        if (saldoActual < request.getMonto()) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Saldo insuficiente para realizar esta puja",
+                    "saldo", saldoActual
+            );
+        }
+
+        usuario.setSaldo(saldoActual - request.getMonto());
+        usuarioRepository.save(usuario);
 
         Puja puja = new Puja();
         puja.setUsuarioId(request.getUsuarioId());
@@ -68,11 +100,20 @@ public class PujaController {
 
         subastaRepository.save(subasta);
 
+        WalletMovimiento movimiento = new WalletMovimiento();
+        movimiento.setUsuarioId(usuario.getId());
+        movimiento.setTipo("PUJA");
+        movimiento.setMonto(request.getMonto());
+        movimiento.setDescripcion("Puja realizada en " + subasta.getNombre());
+
+        walletRepository.save(movimiento);
+
         return Map.of(
                 "ok", true,
                 "mensaje", "Puja realizada correctamente",
                 "puja", nuevaPuja,
-                "subasta", subasta
+                "subasta", subasta,
+                "saldo", usuario.getSaldo()
         );
     }
 
