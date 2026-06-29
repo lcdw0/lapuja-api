@@ -9,6 +9,7 @@ import com.lapuja.api.repository.PujaRepository;
 import com.lapuja.api.repository.SubastaRepository;
 import com.lapuja.api.repository.UsuarioRepository;
 import com.lapuja.api.repository.WalletMovimientoRepository;
+import com.lapuja.api.service.NotificacionService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,17 +24,20 @@ public class PujaController {
     private final SubastaRepository subastaRepository;
     private final UsuarioRepository usuarioRepository;
     private final WalletMovimientoRepository walletRepository;
+    private final NotificacionService notificacionService;
 
     public PujaController(
             PujaRepository pujaRepository,
             SubastaRepository subastaRepository,
             UsuarioRepository usuarioRepository,
-            WalletMovimientoRepository walletRepository
+            WalletMovimientoRepository walletRepository,
+            NotificacionService notificacionService
     ) {
         this.pujaRepository = pujaRepository;
         this.subastaRepository = subastaRepository;
         this.usuarioRepository = usuarioRepository;
         this.walletRepository = walletRepository;
+        this.notificacionService = notificacionService;
     }
 
     @PostMapping
@@ -131,7 +135,25 @@ public class PujaController {
                         "Reembolso por puja superada en " + subasta.getNombre()
                 );
 
-                walletRepository.save(reembolso);
+                WalletMovimiento reembolsoGuardado = walletRepository.save(reembolso);
+
+                notificacionService.crear(
+                        ganadorAnterior.getId(),
+                        "Oferta superada",
+                        "Tu oferta en " + subasta.getNombre() + " fue superada. Se te reembolsó $" + montoAnterior + ".",
+                        "OFERTA_SUPERADA",
+                        subasta.getId(),
+                        "auction_detail"
+                );
+
+                notificacionService.crear(
+                        ganadorAnterior.getId(),
+                        "Reembolso recibido",
+                        "Recibiste un reembolso de $" + montoAnterior + " por la subasta " + subasta.getNombre() + ".",
+                        "REEMBOLSO",
+                        reembolsoGuardado.getId(),
+                        "wallet"
+                );
             }
         }
 
@@ -168,6 +190,15 @@ public class PujaController {
         }
 
         walletRepository.save(movimiento);
+
+        notificacionService.crear(
+                usuario.getId(),
+                "Vas ganando",
+                "Ahora vas ganando la subasta " + subasta.getNombre() + " con una oferta de $" + request.getMonto() + ".",
+                "VAS_GANANDO",
+                subasta.getId(),
+                "auction_detail"
+        );
 
         return Map.of(
                 "ok", true,

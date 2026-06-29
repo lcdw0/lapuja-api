@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.lapuja.api.service.NotificacionService;
 
 @RestController
 @RequestMapping("/api/wallet")
@@ -25,17 +26,20 @@ public class WalletController {
     private final WalletMovimientoRepository walletRepository;
     private final MetodoPagoRepository metodoPagoRepository;
     private final SubastaRepository subastaRepository;
+    private final NotificacionService notificacionService;
 
     public WalletController(
             UsuarioRepository usuarioRepository,
             WalletMovimientoRepository walletRepository,
             MetodoPagoRepository metodoPagoRepository,
-            SubastaRepository subastaRepository
+            SubastaRepository subastaRepository,
+            NotificacionService notificacionService
     ) {
         this.usuarioRepository = usuarioRepository;
         this.walletRepository = walletRepository;
         this.metodoPagoRepository = metodoPagoRepository;
         this.subastaRepository = subastaRepository;
+        this.notificacionService = notificacionService;
     }
 
     @PostMapping("/{usuarioId}/recargar")
@@ -80,7 +84,17 @@ public class WalletController {
                 "Recarga con " + metodoPago.getMarca() + " ****" + metodoPago.getUltimos4()
         );
 
-        walletRepository.save(movimiento);
+        WalletMovimiento movimientoGuardado = walletRepository.save(movimiento);
+
+        notificacionService.crear(
+                usuarioId,
+                "Recarga realizada",
+                "Se acreditaron $" + request.getMonto() + " a tu wallet mediante " +
+                        metodoPago.getMarca() + " ****" + metodoPago.getUltimos4() + ".",
+                "RECARGA",
+                movimientoGuardado.getId(),
+                "wallet"
+        );
 
         return Map.of(
                 "ok", true,
