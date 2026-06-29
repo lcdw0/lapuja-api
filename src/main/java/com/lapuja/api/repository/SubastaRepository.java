@@ -16,4 +16,22 @@ public interface SubastaRepository extends JpaRepository<Subasta, Long>, JpaSpec
     List<Subasta> findByEstadoAndFechaFinBefore(String estado, LocalDateTime fechaActual);
 
     List<Subasta> findByEstadoAndGanadorId(String estado, Long ganadorId);
+
+    long countByUsuarioId(Long usuarioId);
+
+    long countByUsuarioIdAndEstado(Long usuarioId, String estado);
+
+    long countByGanadorIdAndEstado(Long ganadorId, String estado);
+
+    long countByUsuarioIdAndEstadoAndGanadorIdIsNotNull(Long usuarioId, String estado);
+
+    List<Subasta> findTop5ByUsuarioIdOrderByFechaCreacionDesc(Long usuarioId);
+
+    List<Subasta> findTop5ByGanadorIdOrderByFechaFinDesc(Long ganadorId);
+
+    List<Subasta> findByUsuarioIdAndFechaCreacionBetweenOrderByFechaCreacionAsc(
+            Long usuarioId,
+            LocalDateTime inicio,
+            LocalDateTime fin
+    );
 }
