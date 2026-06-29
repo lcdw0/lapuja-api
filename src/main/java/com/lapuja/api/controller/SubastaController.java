@@ -1,8 +1,11 @@
 package com.lapuja.api.controller;
 
+import com.lapuja.api.dto.SubastaDetalleResponse;
 import com.lapuja.api.dto.SubastaRequest;
 import com.lapuja.api.entity.Subasta;
+import com.lapuja.api.entity.SubastaImagen;
 import com.lapuja.api.repository.PujaRepository;
+import com.lapuja.api.repository.SubastaImagenRepository;
 import com.lapuja.api.repository.SubastaRepository;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,10 +20,16 @@ public class SubastaController {
 
     private final SubastaRepository subastaRepository;
     private final PujaRepository pujaRepository;
+    private final SubastaImagenRepository subastaImagenRepository;
 
-    public SubastaController(SubastaRepository subastaRepository, PujaRepository pujaRepository) {
+    public SubastaController(
+            SubastaRepository subastaRepository,
+            PujaRepository pujaRepository,
+            SubastaImagenRepository subastaImagenRepository
+    ) {
         this.subastaRepository = subastaRepository;
         this.pujaRepository = pujaRepository;
+        this.subastaImagenRepository = subastaImagenRepository;
     }
 
     @GetMapping
@@ -51,12 +60,19 @@ public class SubastaController {
 
     @GetMapping("/{id}")
     public Object obtenerPorId(@PathVariable Long id) {
-        return subastaRepository.findById(id)
-                .<Object>map(subasta -> subasta)
-                .orElseGet(() -> Map.of(
-                        "ok", false,
-                        "mensaje", "Subasta no encontrada"
-                ));
+        Subasta subasta = subastaRepository.findById(id).orElse(null);
+
+        if (subasta == null) {
+            return Map.of(
+                    "ok", false,
+                    "mensaje", "Subasta no encontrada"
+            );
+        }
+
+        List<SubastaImagen> imagenes =
+                subastaImagenRepository.findBySubastaIdOrderByOrdenAsc(id);
+
+        return new SubastaDetalleResponse(subasta, imagenes);
     }
 
     @GetMapping("/usuario/{usuarioId}")
@@ -75,33 +91,21 @@ public class SubastaController {
         Subasta subasta = subastaRepository.findById(id).orElse(null);
 
         if (subasta == null) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "Subasta no encontrada"
-            );
+            return Map.of("ok", false, "mensaje", "Subasta no encontrada");
         }
 
         if (!"ACTIVA".equals(subasta.getEstado())) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "Solo se pueden editar subastas activas"
-            );
+            return Map.of("ok", false, "mensaje", "Solo se pueden editar subastas activas");
         }
 
         boolean tienePujas = pujaRepository.existsBySubastaId(id);
 
         if (tienePujas) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "No se puede editar una subasta que ya tiene pujas"
-            );
+            return Map.of("ok", false, "mensaje", "No se puede editar una subasta que ya tiene pujas");
         }
 
         if (request.getUsuarioId() == null || !request.getUsuarioId().equals(subasta.getUsuarioId())) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "No tienes permiso para editar esta subasta"
-            );
+            return Map.of("ok", false, "mensaje", "No tienes permiso para editar esta subasta");
         }
 
         Object validacion = validarSubastaRequest(request, true);
@@ -126,35 +130,23 @@ public class SubastaController {
         Subasta subasta = subastaRepository.findById(id).orElse(null);
 
         if (subasta == null) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "Subasta no encontrada"
-            );
+            return Map.of("ok", false, "mensaje", "Subasta no encontrada");
         }
 
         Long usuarioId = request.get("usuarioId");
 
         if (usuarioId == null || !usuarioId.equals(subasta.getUsuarioId())) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "No tienes permiso para cancelar esta subasta"
-            );
+            return Map.of("ok", false, "mensaje", "No tienes permiso para cancelar esta subasta");
         }
 
         if (!"ACTIVA".equals(subasta.getEstado())) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "Solo se pueden cancelar subastas activas"
-            );
+            return Map.of("ok", false, "mensaje", "Solo se pueden cancelar subastas activas");
         }
 
         boolean tienePujas = pujaRepository.existsBySubastaId(id);
 
         if (tienePujas) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "No se puede cancelar una subasta que ya tiene pujas"
-            );
+            return Map.of("ok", false, "mensaje", "No se puede cancelar una subasta que ya tiene pujas");
         }
 
         subasta.setEstado("CANCELADA");
@@ -170,24 +162,15 @@ public class SubastaController {
         Subasta subasta = subastaRepository.findById(id).orElse(null);
 
         if (subasta == null) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "Subasta no encontrada"
-            );
+            return Map.of("ok", false, "mensaje", "Subasta no encontrada");
         }
 
         if ("FINALIZADA".equals(subasta.getEstado())) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "La subasta ya está finalizada"
-            );
+            return Map.of("ok", false, "mensaje", "La subasta ya está finalizada");
         }
 
         if ("CANCELADA".equals(subasta.getEstado())) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "No se puede finalizar una subasta cancelada"
-            );
+            return Map.of("ok", false, "mensaje", "No se puede finalizar una subasta cancelada");
         }
 
         subasta.setEstado("FINALIZADA");
@@ -202,38 +185,23 @@ public class SubastaController {
     private Object validarSubastaRequest(SubastaRequest request, boolean validarFecha) {
 
         if (request.getNombre() == null || request.getNombre().isBlank()) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "El nombre es obligatorio"
-            );
+            return Map.of("ok", false, "mensaje", "El nombre es obligatorio");
         }
 
         if (request.getPrecioInicial() == null || request.getPrecioInicial() <= 0) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "El precio inicial debe ser mayor que cero"
-            );
+            return Map.of("ok", false, "mensaje", "El precio inicial debe ser mayor que cero");
         }
 
         if (request.getUsuarioId() == null) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "El usuario es obligatorio"
-            );
+            return Map.of("ok", false, "mensaje", "El usuario es obligatorio");
         }
 
         if (request.getFechaFin() == null) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "La fecha de finalización es obligatoria"
-            );
+            return Map.of("ok", false, "mensaje", "La fecha de finalización es obligatoria");
         }
 
         if (validarFecha && request.getFechaFin().isBefore(LocalDateTime.now())) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "La fecha de finalización debe ser futura"
-            );
+            return Map.of("ok", false, "mensaje", "La fecha de finalización debe ser futura");
         }
 
         return null;
