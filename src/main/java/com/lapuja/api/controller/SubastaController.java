@@ -13,6 +13,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
+
 @RestController
 @RequestMapping("/api/subastas")
 @CrossOrigin(origins = "*")
@@ -56,6 +61,66 @@ public class SubastaController {
         subasta.setUsuarioId(request.getUsuarioId());
 
         return subastaRepository.save(subasta);
+    }
+
+    @GetMapping("/buscar")
+    public List<Subasta> buscarSubastas(
+            @RequestParam(required = false) String texto,
+            @RequestParam(required = false) String categoria,
+            @RequestParam(required = false) Double min,
+            @RequestParam(required = false) Double max,
+            @RequestParam(required = false, defaultValue = "TODAS") String estado,
+            @RequestParam(required = false, defaultValue = "recientes") String orden
+    ) {
+        Specification<Subasta> spec = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (estado != null && !estado.equalsIgnoreCase("TODAS")) {
+                predicates.add(criteriaBuilder.equal(root.get("estado"), estado.toUpperCase()));
+            } else {
+                predicates.add(root.get("estado").in("ACTIVA", "FINALIZADA"));
+            }
+
+            if (texto != null && !texto.isBlank()) {
+                String textoBusqueda = "%" + texto.toLowerCase().trim() + "%";
+
+                Predicate nombreLike = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("nombre")),
+                        textoBusqueda
+                );
+
+                Predicate descripcionLike = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("descripcion")),
+                        textoBusqueda
+                );
+
+                predicates.add(criteriaBuilder.or(nombreLike, descripcionLike));
+            }
+
+            if (categoria != null && !categoria.isBlank() && !"Todas".equalsIgnoreCase(categoria)) {
+                predicates.add(criteriaBuilder.equal(root.get("categoria"), categoria));
+            }
+
+            if (min != null && min >= 0) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("precioActual"), min));
+            }
+
+            if (max != null && max >= 0) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("precioActual"), max));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Sort sort = switch (orden) {
+            case "precio_asc" -> Sort.by(Sort.Direction.ASC, "precioActual");
+            case "precio_desc" -> Sort.by(Sort.Direction.DESC, "precioActual");
+            case "ofertas_desc" -> Sort.by(Sort.Direction.DESC, "ofertas");
+            case "fecha_fin_asc" -> Sort.by(Sort.Direction.ASC, "fechaFin");
+            default -> Sort.by(Sort.Direction.DESC, "fechaCreacion");
+        };
+
+        return subastaRepository.findAll(spec, sort);
     }
 
     @GetMapping("/{id}")
