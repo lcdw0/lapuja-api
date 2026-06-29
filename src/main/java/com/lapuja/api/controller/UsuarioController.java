@@ -4,6 +4,7 @@ import com.lapuja.api.dto.LoginRequest;
 import com.lapuja.api.dto.UsuarioRegistroRequest;
 import com.lapuja.api.dto.UsuarioUpdateRequest;
 import com.lapuja.api.entity.Usuario;
+import com.lapuja.api.repository.SubastaRepository;
 import com.lapuja.api.repository.UsuarioRepository;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,9 +17,14 @@ import java.util.Map;
 public class UsuarioController {
 
     private final UsuarioRepository usuarioRepository;
+    private final SubastaRepository subastaRepository;
 
-    public UsuarioController(UsuarioRepository usuarioRepository) {
+    public UsuarioController(
+            UsuarioRepository usuarioRepository,
+            SubastaRepository subastaRepository
+    ) {
         this.usuarioRepository = usuarioRepository;
+        this.subastaRepository = subastaRepository;
     }
 
     @PostMapping("/registro")
@@ -89,6 +95,86 @@ public class UsuarioController {
         }
 
         return respuestaUsuario(true, "Usuario encontrado", usuario);
+    }
+
+    @GetMapping("/{id}/perfil-publico")
+    public Object obtenerPerfilPublico(@PathVariable Long id) {
+
+        Usuario usuario = usuarioRepository.findById(id).orElse(null);
+
+        if (usuario == null) {
+            return Map.of("ok", false, "mensaje", "Usuario no encontrado");
+        }
+
+        long subastasActivas = subastaRepository.countByUsuarioIdAndEstado(id, "ACTIVA");
+        long subastasFinalizadas = subastaRepository.countByUsuarioIdAndEstado(id, "FINALIZADA");
+        long subastasVendidas = subastaRepository.countByUsuarioIdAndEstadoAndGanadorIdIsNotNull(id, "FINALIZADA");
+        long compras = subastaRepository.countByGanadorIdAndEstado(id, "FINALIZADA");
+
+        Map<String, Object> respuesta = new HashMap<>();
+
+        respuesta.put("ok", true);
+        respuesta.put("mensaje", "Perfil público encontrado");
+
+        respuesta.put("id", usuario.getId());
+        respuesta.put("nombre", usuario.getNombre());
+        respuesta.put("fotoPerfil", usuario.getFotoPerfil());
+        respuesta.put("ciudad", usuario.getCiudad());
+        respuesta.put("biografia", usuario.getBiografia());
+        respuesta.put("fechaRegistro", usuario.getFechaRegistro());
+
+        respuesta.put("cantidadVentas", subastasVendidas);
+        respuesta.put("cantidadCompras", compras);
+        respuesta.put("subastasActivas", subastasActivas);
+        respuesta.put("subastasFinalizadas", subastasFinalizadas);
+        respuesta.put("subastasVendidas", subastasVendidas);
+
+        respuesta.put("reputacion", 0.0);
+        respuesta.put("promedioEstrellas", 0.0);
+
+        return respuesta;
+    }
+
+    @GetMapping("/{id}/subastas/activas")
+    public Object obtenerSubastasActivasUsuario(@PathVariable Long id) {
+
+        if (usuarioRepository.findById(id).isEmpty()) {
+            return Map.of("ok", false, "mensaje", "Usuario no encontrado");
+        }
+
+        return Map.of(
+                "ok", true,
+                "mensaje", "Subastas activas encontradas",
+                "subastas", subastaRepository.findByUsuarioIdAndEstadoOrderByFechaCreacionDesc(id, "ACTIVA")
+        );
+    }
+
+    @GetMapping("/{id}/subastas/finalizadas")
+    public Object obtenerSubastasFinalizadasUsuario(@PathVariable Long id) {
+
+        if (usuarioRepository.findById(id).isEmpty()) {
+            return Map.of("ok", false, "mensaje", "Usuario no encontrado");
+        }
+
+        return Map.of(
+                "ok", true,
+                "mensaje", "Subastas finalizadas encontradas",
+                "subastas", subastaRepository.findByUsuarioIdAndEstadoOrderByFechaCreacionDesc(id, "FINALIZADA")
+        );
+    }
+
+    @GetMapping("/{id}/subastas/vendidas")
+    public Object obtenerSubastasVendidasUsuario(@PathVariable Long id) {
+
+        if (usuarioRepository.findById(id).isEmpty()) {
+            return Map.of("ok", false, "mensaje", "Usuario no encontrado");
+        }
+
+        return Map.of(
+                "ok", true,
+                "mensaje", "Subastas vendidas encontradas",
+                "subastas", subastaRepository.findByUsuarioIdAndEstadoAndGanadorIdIsNotNullOrderByFechaCreacionDesc(id, "FINALIZADA")
+        );
     }
 
     @PutMapping("/{id}")

@@ -34,4 +34,11 @@ public interface SubastaRepository extends JpaRepository<Subasta, Long>, JpaSpec
             LocalDateTime inicio,
             LocalDateTime fin
     );
+
+    List<Subasta> findByUsuarioIdAndEstadoOrderByFechaCreacionDesc(Long usuarioId, String estado);
+
+    List<Subasta> findByUsuarioIdAndEstadoAndGanadorIdIsNotNullOrderByFechaCreacionDesc(
+            Long usuarioId,
+            String estado
+    );
 }
