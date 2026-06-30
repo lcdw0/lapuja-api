@@ -42,6 +42,10 @@ public class Usuario {
 
     private LocalDateTime ultimaActividad;
 
+    private String apellidos;
+
+    private String pais;
+
     public Usuario() {
     }
 
@@ -163,5 +167,21 @@ public class Usuario {
 
     public void setUltimaActividad(LocalDateTime ultimaActividad) {
         this.ultimaActividad = ultimaActividad;
+    }
+
+    public String getApellidos() {
+        return apellidos;
+    }
+
+    public void setApellidos(String apellidos) {
+        this.apellidos = apellidos;
+    }
+
+    public String getPais() {
+        return pais;
+    }
+
+    public void setPais(String pais) {
+        this.pais = pais;
     }
 }

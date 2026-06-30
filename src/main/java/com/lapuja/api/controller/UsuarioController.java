@@ -44,6 +44,10 @@ public class UsuarioController {
             return Map.of("ok", false, "mensaje", "El nombre es obligatorio");
         }
 
+        if (request.getApellidos() == null || request.getApellidos().isBlank()) {
+            return Map.of("ok", false, "mensaje", "Los apellidos son obligatorios");
+        }
+
         if (request.getCorreo() == null || request.getCorreo().isBlank()) {
             return Map.of("ok", false, "mensaje", "El correo es obligatorio");
         }
@@ -64,6 +68,8 @@ public class UsuarioController {
 
         nuevoUsuario.setTelefono(request.getTelefono());
         nuevoUsuario.setCiudad(request.getCiudad());
+        nuevoUsuario.setApellidos(request.getApellidos());
+        nuevoUsuario.setPais(request.getPais());
 
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 
@@ -165,6 +171,8 @@ public class UsuarioController {
         respuesta.put("subastasVendidas", subastasVendidas);
         respuesta.put("reputacion", 0.0);
         respuesta.put("promedioEstrellas", 0.0);
+        respuesta.put("apellidos", usuario.getApellidos());
+        respuesta.put("pais", usuario.getPais());
 
         return respuesta;
     }
@@ -225,6 +233,14 @@ public class UsuarioController {
 
         if (request.getNombre() != null && !request.getNombre().isBlank()) {
             usuario.setNombre(request.getNombre());
+        }
+
+        if (request.getApellidos() != null && !request.getApellidos().isBlank()) {
+            usuario.setApellidos(request.getApellidos());
+        }
+
+        if (request.getPais() != null) {
+            usuario.setPais(request.getPais());
         }
 
         if (request.getCorreo() != null && !request.getCorreo().isBlank()) {
@@ -294,6 +310,8 @@ public class UsuarioController {
         respuesta.put("saldo", usuario.getSaldo());
         respuesta.put("correoVerificado", usuario.getCorreoVerificado());
         respuesta.put("fechaVerificacionCorreo", usuario.getFechaVerificacionCorreo());
+        respuesta.put("apellidos", usuario.getApellidos());
+        respuesta.put("pais", usuario.getPais());
 
         return respuesta;
     }

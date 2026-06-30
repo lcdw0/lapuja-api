@@ -11,6 +11,8 @@ public class UsuarioUpdateRequest {
     private String telefono;
     private String ciudad;
     private String biografia;
+    private String apellidos;
+    private String pais;
 
     public UsuarioUpdateRequest() {
     }
@@ -41,4 +43,20 @@ public class UsuarioUpdateRequest {
 
     public String getBiografia() { return biografia; }
     public void setBiografia(String biografia) { this.biografia = biografia; }
+
+    public String getApellidos() {
+        return apellidos;
+    }
+
+    public void setApellidos(String apellidos) {
+        this.apellidos = apellidos;
+    }
+
+    public String getPais() {
+        return pais;
+    }
+
+    public void setPais(String pais) {
+        this.pais = pais;
+    }
 }
