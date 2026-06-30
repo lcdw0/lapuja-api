@@ -9,13 +9,14 @@ import com.lapuja.api.repository.MetodoPagoRepository;
 import com.lapuja.api.repository.SubastaRepository;
 import com.lapuja.api.repository.UsuarioRepository;
 import com.lapuja.api.repository.WalletMovimientoRepository;
+import com.lapuja.api.service.EmailService;
+import com.lapuja.api.service.NotificacionService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.lapuja.api.service.NotificacionService;
 
 @RestController
 @RequestMapping("/api/wallet")
@@ -27,19 +28,22 @@ public class WalletController {
     private final MetodoPagoRepository metodoPagoRepository;
     private final SubastaRepository subastaRepository;
     private final NotificacionService notificacionService;
+    private final EmailService emailService;
 
     public WalletController(
             UsuarioRepository usuarioRepository,
             WalletMovimientoRepository walletRepository,
             MetodoPagoRepository metodoPagoRepository,
             SubastaRepository subastaRepository,
-            NotificacionService notificacionService
+            NotificacionService notificacionService,
+            EmailService emailService
     ) {
         this.usuarioRepository = usuarioRepository;
         this.walletRepository = walletRepository;
         this.metodoPagoRepository = metodoPagoRepository;
         this.subastaRepository = subastaRepository;
         this.notificacionService = notificacionService;
+        this.emailService = emailService;
     }
 
     @PostMapping("/{usuarioId}/recargar")
@@ -94,6 +98,11 @@ public class WalletController {
                 "RECARGA",
                 movimientoGuardado.getId(),
                 "wallet"
+        );
+
+        emailService.enviarCorreoRecarga(
+                usuario,
+                request.getMonto()
         );
 
         return Map.of(

@@ -15,6 +15,12 @@ public interface SubastaRepository extends JpaRepository<Subasta, Long>, JpaSpec
 
     List<Subasta> findByEstadoAndFechaFinBefore(String estado, LocalDateTime fechaActual);
 
+    List<Subasta> findByEstadoAndFechaFinBetweenAndAvisoFinalizacionEnviadoFalse(
+            String estado,
+            LocalDateTime desde,
+            LocalDateTime hasta
+    );
+
     List<Subasta> findByEstadoAndGanadorId(String estado, Long ganadorId);
 
     long countByUsuarioId(Long usuarioId);

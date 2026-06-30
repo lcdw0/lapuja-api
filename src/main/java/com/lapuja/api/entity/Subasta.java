@@ -32,6 +32,8 @@ public class Subasta {
 
     private Long usuarioId;
 
+    private Boolean avisoFinalizacionEnviado;
+
     public Subasta() {
     }
 
@@ -43,6 +45,7 @@ public class Subasta {
         this.ofertas = 0;
         this.ganador = "Nadie";
         this.ganadorId = null;
+        this.avisoFinalizacionEnviado = false;
     }
 
     public Long getId() {
@@ -147,5 +150,13 @@ public class Subasta {
 
     public void setUsuarioId(Long usuarioId) {
         this.usuarioId = usuarioId;
+    }
+
+    public Boolean getAvisoFinalizacionEnviado() {
+        return avisoFinalizacionEnviado;
+    }
+
+    public void setAvisoFinalizacionEnviado(Boolean avisoFinalizacionEnviado) {
+        this.avisoFinalizacionEnviado = avisoFinalizacionEnviado;
     }
 }

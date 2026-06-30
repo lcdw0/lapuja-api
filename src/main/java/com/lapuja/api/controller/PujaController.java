@@ -9,6 +9,7 @@ import com.lapuja.api.repository.PujaRepository;
 import com.lapuja.api.repository.SubastaRepository;
 import com.lapuja.api.repository.UsuarioRepository;
 import com.lapuja.api.repository.WalletMovimientoRepository;
+import com.lapuja.api.service.EmailService;
 import com.lapuja.api.service.NotificacionService;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,64 +26,50 @@ public class PujaController {
     private final UsuarioRepository usuarioRepository;
     private final WalletMovimientoRepository walletRepository;
     private final NotificacionService notificacionService;
+    private final EmailService emailService;
 
     public PujaController(
             PujaRepository pujaRepository,
             SubastaRepository subastaRepository,
             UsuarioRepository usuarioRepository,
             WalletMovimientoRepository walletRepository,
-            NotificacionService notificacionService
+            NotificacionService notificacionService,
+            EmailService emailService
     ) {
         this.pujaRepository = pujaRepository;
         this.subastaRepository = subastaRepository;
         this.usuarioRepository = usuarioRepository;
         this.walletRepository = walletRepository;
         this.notificacionService = notificacionService;
+        this.emailService = emailService;
     }
 
     @PostMapping
     public Object crearPuja(@RequestBody PujaRequest request) {
 
-        Usuario usuario = usuarioRepository.findById(request.getUsuarioId())
-                .orElse(null);
+        Usuario usuario = usuarioRepository.findById(request.getUsuarioId()).orElse(null);
 
         if (usuario == null) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "Usuario no encontrado"
-            );
+            return Map.of("ok", false, "mensaje", "Usuario no encontrado");
         }
 
-        Subasta subasta = subastaRepository.findById(request.getSubastaId())
-                .orElse(null);
+        Subasta subasta = subastaRepository.findById(request.getSubastaId()).orElse(null);
 
         if (subasta == null) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "Subasta no encontrada"
-            );
+            return Map.of("ok", false, "mensaje", "Subasta no encontrada");
         }
 
         if (subasta.getUsuarioId() != null &&
                 subasta.getUsuarioId().equals(usuario.getId())) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "No puedes pujar en tu propia subasta"
-            );
+            return Map.of("ok", false, "mensaje", "No puedes pujar en tu propia subasta");
         }
 
         if (!"ACTIVA".equals(subasta.getEstado())) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "La subasta no está activa"
-            );
+            return Map.of("ok", false, "mensaje", "La subasta no está activa");
         }
 
         if (request.getMonto() == null || request.getMonto() <= subasta.getPrecioActual()) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "La puja debe ser mayor al precio actual"
-            );
+            return Map.of("ok", false, "mensaje", "La puja debe ser mayor al precio actual");
         }
 
         Double saldoActual = usuario.getSaldo() == null ? 0.0 : usuario.getSaldo();
@@ -102,10 +89,7 @@ public class PujaController {
         }
 
         if (montoADescontar <= 0) {
-            return Map.of(
-                    "ok", false,
-                    "mensaje", "La nueva puja debe ser mayor a la anterior"
-            );
+            return Map.of("ok", false, "mensaje", "La nueva puja debe ser mayor a la anterior");
         }
 
         if (saldoActual < montoADescontar) {
@@ -117,8 +101,7 @@ public class PujaController {
         }
 
         if (!mismoGanador && ganadorAnteriorId != null) {
-            Usuario ganadorAnterior = usuarioRepository.findById(ganadorAnteriorId)
-                    .orElse(null);
+            Usuario ganadorAnterior = usuarioRepository.findById(ganadorAnteriorId).orElse(null);
 
             if (ganadorAnterior != null) {
                 Double saldoGanadorAnterior =
@@ -144,6 +127,11 @@ public class PujaController {
                         "OFERTA_SUPERADA",
                         subasta.getId(),
                         "auction_detail"
+                );
+
+                emailService.enviarCorreoOfertaSuperada(
+                        ganadorAnterior,
+                        subasta.getNombre()
                 );
 
                 notificacionService.crear(
@@ -180,13 +168,9 @@ public class PujaController {
         movimiento.setMonto(montoADescontar);
 
         if (mismoGanador) {
-            movimiento.setDescripcion(
-                    "Aumento de puja en " + subasta.getNombre()
-            );
+            movimiento.setDescripcion("Aumento de puja en " + subasta.getNombre());
         } else {
-            movimiento.setDescripcion(
-                    "Puja realizada en " + subasta.getNombre()
-            );
+            movimiento.setDescripcion("Puja realizada en " + subasta.getNombre());
         }
 
         walletRepository.save(movimiento);

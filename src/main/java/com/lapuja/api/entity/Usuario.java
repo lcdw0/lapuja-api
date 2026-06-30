@@ -14,7 +14,7 @@ public class Usuario {
     @Column(nullable = false)
     private String nombre;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable =false, unique = true)
     private String correo;
 
     @Column(nullable = false)
@@ -24,6 +24,7 @@ public class Usuario {
     private String fotoPerfil;
 
     private String telefono;
+
     private String ciudad;
 
     @Column(length = 500)
@@ -32,6 +33,11 @@ public class Usuario {
     private Double saldo;
 
     private LocalDateTime fechaRegistro;
+
+    @Column(nullable = false)
+    private Boolean correoVerificado = false;
+
+    private LocalDateTime fechaVerificacionCorreo;
 
     public Usuario() {
     }
@@ -44,10 +50,15 @@ public class Usuario {
 
     @PrePersist
     public void prePersist() {
+
         this.fechaRegistro = LocalDateTime.now();
 
         if (this.saldo == null) {
-            this.saldo = 10000.0;
+            this.saldo = 0.0;
+        }
+
+        if (this.correoVerificado == null) {
+            this.correoVerificado = false;
         }
     }
 
@@ -125,5 +136,21 @@ public class Usuario {
 
     public void setFechaRegistro(LocalDateTime fechaRegistro) {
         this.fechaRegistro = fechaRegistro;
+    }
+
+    public Boolean getCorreoVerificado() {
+        return correoVerificado;
+    }
+
+    public void setCorreoVerificado(Boolean correoVerificado) {
+        this.correoVerificado = correoVerificado;
+    }
+
+    public LocalDateTime getFechaVerificacionCorreo() {
+        return fechaVerificacionCorreo;
+    }
+
+    public void setFechaVerificacionCorreo(LocalDateTime fechaVerificacionCorreo) {
+        this.fechaVerificacionCorreo = fechaVerificacionCorreo;
     }
 }

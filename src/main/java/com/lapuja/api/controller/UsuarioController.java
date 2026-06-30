@@ -3,9 +3,13 @@ package com.lapuja.api.controller;
 import com.lapuja.api.dto.LoginRequest;
 import com.lapuja.api.dto.UsuarioRegistroRequest;
 import com.lapuja.api.dto.UsuarioUpdateRequest;
+import com.lapuja.api.entity.EmailToken;
 import com.lapuja.api.entity.Usuario;
+import com.lapuja.api.enums.EmailTokenType;
 import com.lapuja.api.repository.SubastaRepository;
 import com.lapuja.api.repository.UsuarioRepository;
+import com.lapuja.api.service.EmailService;
+import com.lapuja.api.service.EmailTokenService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -18,13 +22,19 @@ public class UsuarioController {
 
     private final UsuarioRepository usuarioRepository;
     private final SubastaRepository subastaRepository;
+    private final EmailService emailService;
+    private final EmailTokenService emailTokenService;
 
     public UsuarioController(
             UsuarioRepository usuarioRepository,
-            SubastaRepository subastaRepository
+            SubastaRepository subastaRepository,
+            EmailService emailService,
+            EmailTokenService emailTokenService
     ) {
         this.usuarioRepository = usuarioRepository;
         this.subastaRepository = subastaRepository;
+        this.emailService = emailService;
+        this.emailTokenService = emailTokenService;
     }
 
     @PostMapping("/registro")
@@ -52,9 +62,31 @@ public class UsuarioController {
                 request.getPassword()
         );
 
+        nuevoUsuario.setTelefono(request.getTelefono());
+        nuevoUsuario.setCiudad(request.getCiudad());
+
         Usuario usuarioGuardado = usuarioRepository.save(nuevoUsuario);
 
-        return respuestaUsuario(true, "Usuario registrado correctamente", usuarioGuardado);
+        try {
+            EmailToken token = emailTokenService.crearToken(
+                    usuarioGuardado,
+                    EmailTokenType.VERIFICACION_CORREO,
+                    1440
+            );
+
+            emailService.enviarCorreoVerificacion(
+                    usuarioGuardado,
+                    token.getToken()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return respuestaUsuario(
+                true,
+                "Usuario registrado correctamente. Revisa tu correo para verificar tu cuenta.",
+                usuarioGuardado
+        );
     }
 
     @PostMapping("/login")
@@ -74,15 +106,20 @@ public class UsuarioController {
                         return Map.of("ok", false, "mensaje", "Contraseña incorrecta");
                     }
 
+                    if (!Boolean.TRUE.equals(usuarioEncontrado.getCorreoVerificado())) {
+                        return Map.of(
+                                "ok", false,
+                                "mensaje", "Debes verificar tu correo antes de iniciar sesión"
+                        );
+                    }
+
                     return respuestaUsuario(
                             true,
                             "Inicio de sesión correcto",
                             usuarioEncontrado
                     );
                 })
-                .orElse(
-                        Map.of("ok", false, "mensaje", "Usuario no encontrado")
-                );
+                .orElse(Map.of("ok", false, "mensaje", "Usuario no encontrado"));
     }
 
     @GetMapping("/{id}")
@@ -115,20 +152,17 @@ public class UsuarioController {
 
         respuesta.put("ok", true);
         respuesta.put("mensaje", "Perfil público encontrado");
-
         respuesta.put("id", usuario.getId());
         respuesta.put("nombre", usuario.getNombre());
         respuesta.put("fotoPerfil", usuario.getFotoPerfil());
         respuesta.put("ciudad", usuario.getCiudad());
         respuesta.put("biografia", usuario.getBiografia());
         respuesta.put("fechaRegistro", usuario.getFechaRegistro());
-
         respuesta.put("cantidadVentas", subastasVendidas);
         respuesta.put("cantidadCompras", compras);
         respuesta.put("subastasActivas", subastasActivas);
         respuesta.put("subastasFinalizadas", subastasFinalizadas);
         respuesta.put("subastasVendidas", subastasVendidas);
-
         respuesta.put("reputacion", 0.0);
         respuesta.put("promedioEstrellas", 0.0);
 
@@ -258,6 +292,8 @@ public class UsuarioController {
         respuesta.put("biografia", usuario.getBiografia());
         respuesta.put("fechaRegistro", usuario.getFechaRegistro());
         respuesta.put("saldo", usuario.getSaldo());
+        respuesta.put("correoVerificado", usuario.getCorreoVerificado());
+        respuesta.put("fechaVerificacionCorreo", usuario.getFechaVerificacionCorreo());
 
         return respuesta;
     }

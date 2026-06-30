@@ -5,6 +5,8 @@ public class UsuarioRegistroRequest {
     private String nombre;
     private String correo;
     private String password;
+    private String telefono;
+    private String ciudad;
 
     public UsuarioRegistroRequest() {
     }
@@ -31,5 +33,21 @@ public class UsuarioRegistroRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getCiudad() {
+        return ciudad;
+    }
+
+    public void setCiudad(String ciudad) {
+        this.ciudad = ciudad;
     }
 }
