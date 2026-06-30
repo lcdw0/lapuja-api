@@ -140,6 +140,121 @@ public class UsuarioController {
         return respuestaUsuario(true, "Usuario encontrado", usuario);
     }
 
+    @PostMapping("/solicitar-recuperacion")
+    public Object solicitarRecuperacionPassword(@RequestBody Map<String, String> request) {
+
+        String correo = request.get("correo");
+
+        if (correo == null || correo.isBlank()) {
+            return Map.of("ok", false, "mensaje", "El correo es obligatorio");
+        }
+
+        Usuario usuario = usuarioRepository.findByCorreo(correo).orElse(null);
+
+        if (usuario == null) {
+            return Map.of("ok", false, "mensaje", "No existe una cuenta con ese correo");
+        }
+
+        EmailToken token = emailTokenService.crearCodigoRecuperacion(
+                usuario,
+                EmailTokenType.RECUPERACION_PASSWORD,
+                30
+        );
+
+        emailService.enviarCorreoRecuperacionPassword(
+                usuario,
+                token.getToken()
+        );
+
+        return Map.of(
+                "ok", true,
+                "mensaje", "Te enviamos un código de recuperación a tu correo"
+        );
+    }
+
+    @PostMapping("/restablecer-password")
+    public Object restablecerPasswordConCodigo(@RequestBody Map<String, String> request) {
+
+        String correo = request.get("correo");
+        String codigo = request.get("codigo");
+        String nuevaPassword = request.get("nuevaPassword");
+        String confirmarPassword = request.get("confirmarPassword");
+
+        if (correo == null || correo.isBlank()) {
+            return Map.of("ok", false, "mensaje", "El correo es obligatorio");
+        }
+
+        if (codigo == null || codigo.isBlank()) {
+            return Map.of("ok", false, "mensaje", "El código es obligatorio");
+        }
+
+        if (nuevaPassword == null || nuevaPassword.isBlank()) {
+            return Map.of("ok", false, "mensaje", "La nueva contraseña es obligatoria");
+        }
+
+        if (!nuevaPassword.equals(confirmarPassword)) {
+            return Map.of("ok", false, "mensaje", "Las contraseñas no coinciden");
+        }
+
+        if (nuevaPassword.length() < 8) {
+            return Map.of("ok", false, "mensaje", "La contraseña debe tener al menos 8 caracteres");
+        }
+
+        Usuario usuario = usuarioRepository.findByCorreo(correo).orElse(null);
+
+        if (usuario == null) {
+            return Map.of("ok", false, "mensaje", "Usuario no encontrado");
+        }
+
+        EmailToken emailToken = emailTokenService.validarToken(
+                codigo,
+                EmailTokenType.RECUPERACION_PASSWORD
+        );
+
+        if (emailToken == null || !emailToken.getUsuario().getId().equals(usuario.getId())) {
+            return Map.of("ok", false, "mensaje", "Código inválido o expirado");
+        }
+
+        usuario.setPassword(nuevaPassword);
+        usuarioRepository.save(usuario);
+
+        emailTokenService.marcarComoUsado(emailToken);
+
+        return Map.of(
+                "ok", true,
+                "mensaje", "Contraseña restablecida correctamente"
+        );
+    }
+
+    @GetMapping("/verificar-correo")
+    public Object verificarCorreoDesdeEmail(@RequestParam String token) {
+
+        EmailToken emailToken = emailTokenService.validarToken(
+                token,
+                EmailTokenType.VERIFICACION_CORREO
+        );
+
+        if (emailToken == null) {
+            return """
+                <h2>Enlace inválido o expirado</h2>
+                <p>No se pudo verificar la cuenta.</p>
+                """;
+        }
+
+        Usuario usuario = emailToken.getUsuario();
+
+        usuario.setCorreoVerificado(true);
+        usuario.setFechaVerificacionCorreo(java.time.LocalDateTime.now());
+
+        usuarioRepository.save(usuario);
+        emailTokenService.marcarComoUsado(emailToken);
+
+        return """
+            <h2>Cuenta verificada correctamente</h2>
+            <p>Ya puedes iniciar sesión en LaPuja.</p>
+            """;
+    }
+
     @GetMapping("/{id}/perfil-publico")
     public Object obtenerPerfilPublico(@PathVariable Long id) {
 

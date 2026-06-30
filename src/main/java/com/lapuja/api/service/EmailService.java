@@ -28,7 +28,7 @@ public class EmailService {
     public void enviarCorreoVerificacion(Usuario usuario, String token) {
         String asunto = "Verifica tu cuenta en LaPuja";
 
-        String enlace = "lapuja://verificar-correo?token=" + token;
+        String enlace = "http://192.168.1.11:8080/api/usuarios/verificar-correo?token=" + token;
 
         String contenido = """
             <p>Hola <strong>%s</strong>,</p>
@@ -50,23 +50,21 @@ public class EmailService {
         );
     }
 
-    public void enviarCorreoRecuperacionPassword(Usuario usuario, String token) {
-        String asunto = "Recuperación de contraseña - LaPuja";
-
-        String enlace = "lapuja://recuperar-password?token=" + token;
+    public void enviarCorreoRecuperacionPassword(Usuario usuario, String codigo) {
+        String asunto = "Código de recuperación - LaPuja";
 
         String contenido = """
-            <p>Hola <strong>%s</strong>,</p>
-            <p>Recibimos una solicitud para restablecer tu contraseña.</p>
-            <p>Presiona el siguiente botón para continuar:</p>
-            <p style="margin: 24px 0;">
-                <a href="%s" style="background-color: #2563eb; color: #ffffff; padding: 12px 18px; text-decoration: none; border-radius: 8px; display: inline-block;">
-                    Restablecer contraseña
-                </a>
-            </p>
-            <p>Este enlace expirará en 30 minutos.</p>
-            <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
-            """.formatted(usuario.getNombre(), enlace);
+        <p>Hola <strong>%s</strong>,</p>
+        <p>Recibimos una solicitud para restablecer tu contraseña.</p>
+        <p>Ingresa el siguiente código en la aplicación:</p>
+
+        <div style="font-size: 32px; font-weight: bold; letter-spacing: 6px; text-align: center; margin: 24px 0; color: #2563eb;">
+            %s
+        </div>
+
+        <p>Este código expirará en 30 minutos.</p>
+        <p>Si no solicitaste este cambio, puedes ignorar este correo.</p>
+        """.formatted(usuario.getNombre(), codigo);
 
         enviarCorreoHtml(
                 usuario.getCorreo(),
