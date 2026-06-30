@@ -17,17 +17,20 @@ public class SubastaFinalizacionService {
     private final UsuarioRepository usuarioRepository;
     private final NotificacionService notificacionService;
     private final EmailService emailService;
+    private final ChatService chatService;
 
     public SubastaFinalizacionService(
             SubastaRepository subastaRepository,
             UsuarioRepository usuarioRepository,
             NotificacionService notificacionService,
-            EmailService emailService
+            EmailService emailService,
+            ChatService chatService
     ) {
         this.subastaRepository = subastaRepository;
         this.usuarioRepository = usuarioRepository;
         this.notificacionService = notificacionService;
         this.emailService = emailService;
+        this.chatService = chatService;
     }
 
     @Scheduled(fixedRate = 5000)
@@ -54,6 +57,14 @@ public class SubastaFinalizacionService {
             } else {
                 Usuario ganador = usuarioRepository.findById(subasta.getGanadorId()).orElse(null);
                 Usuario vendedor = usuarioRepository.findById(subasta.getUsuarioId()).orElse(null);
+
+                if (ganador != null && vendedor != null) {
+                    chatService.crearConversacionSiNoExiste(
+                            subasta.getId(),
+                            ganador.getId(),
+                            vendedor.getId()
+                    );
+                }
 
                 notificacionService.crear(
                         subasta.getGanadorId(),

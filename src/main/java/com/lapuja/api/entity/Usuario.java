@@ -3,6 +3,7 @@ package com.lapuja.api.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+
 @Entity
 @Table(name = "usuarios")
 public class Usuario {
@@ -38,6 +39,8 @@ public class Usuario {
     private Boolean correoVerificado = false;
 
     private LocalDateTime fechaVerificacionCorreo;
+
+    private LocalDateTime ultimaActividad;
 
     public Usuario() {
     }
@@ -152,5 +155,13 @@ public class Usuario {
 
     public void setFechaVerificacionCorreo(LocalDateTime fechaVerificacionCorreo) {
         this.fechaVerificacionCorreo = fechaVerificacionCorreo;
+    }
+
+    public LocalDateTime getUltimaActividad() {
+        return ultimaActividad;
+    }
+
+    public void setUltimaActividad(LocalDateTime ultimaActividad) {
+        this.ultimaActividad = ultimaActividad;
     }
 }

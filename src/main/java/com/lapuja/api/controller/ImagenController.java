@@ -36,6 +36,16 @@ public class ImagenController {
         return guardarImagen(file, "perfiles");
     }
 
+    @PostMapping(
+            value = "/chat",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public Object subirImagenChat(
+            @RequestParam("file") MultipartFile file
+    ) {
+        return guardarImagen(file, "chat");
+    }
+
     private Object guardarImagen(MultipartFile file, String carpeta) {
         try {
             if (file == null || file.isEmpty()) {
